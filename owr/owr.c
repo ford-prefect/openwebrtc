@@ -43,7 +43,10 @@
 #include "owr_utils.h"
 
 #include <gst/gst.h>
+
+#if 0
 #include <gstnice.h>
+#endif
 
 #ifdef __APPLE__
 #include <TargetConditionals.h>
@@ -64,6 +67,7 @@ static guint bus_watch_id = -1;
 static gpointer owr_run(gpointer data);
 static gboolean bus_call(GstBus *bus, GstMessage *msg, gpointer user_data);
 
+#if 0
 GST_PLUGIN_STATIC_DECLARE(alaw);
 GST_PLUGIN_STATIC_DECLARE(app);
 GST_PLUGIN_STATIC_DECLARE(audioconvert);
@@ -154,6 +158,7 @@ static void gst_log_android_handler(GstDebugCategory *category,
     g_free(obj);
 }
 #endif
+#endif
 
 /**
  * owr_init:
@@ -169,11 +174,13 @@ void owr_init()
 
     g_return_if_fail(!owr_initialized);
 
+#if 0
 #ifdef __ANDROID__
     g_set_print_handler((GPrintFunc)g_print_android_handler);
     g_set_printerr_handler((GPrintFunc)g_printerr_android_handler);
     g_log_set_default_handler((GLogFunc)g_log_android_handler, NULL);
     gst_debug_add_log_function((GstLogFunction)gst_log_android_handler, NULL, NULL);
+#endif
 #endif
 
     /* Hack to make sure that all symbols that we need are included in the resulting library/binary */
@@ -182,6 +189,7 @@ void owr_init()
     gst_init(NULL, NULL);
     owr_initialized = TRUE;
 
+#if 0
     GST_PLUGIN_STATIC_REGISTER(alaw);
     GST_PLUGIN_STATIC_REGISTER(app);
     GST_PLUGIN_STATIC_REGISTER(audioconvert);
@@ -225,6 +233,7 @@ void owr_init()
 
     gst_element_register(NULL, "nicesrc", GST_RANK_NONE, GST_TYPE_NICE_SRC);
     gst_element_register(NULL, "nicesink", GST_RANK_NONE, GST_TYPE_NICE_SINK);
+#endif
 
     owr_main_context_is_external = !!owr_main_context;
 
