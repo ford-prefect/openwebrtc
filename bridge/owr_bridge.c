@@ -42,6 +42,7 @@
 #include "worker/bridgeserver.js.h"
 #include "worker/peerhandler.js.h"
 
+#if 0
 #include <gir/GIRepository-2.0.gir.h>
 #include <gir/GLib-2.0.gir.h>
 #include <gir/GObject-2.0.gir.h>
@@ -49,6 +50,8 @@
 
 #include <girepository.h>
 #include <girparser.h>
+#endif
+
 #include <glib/gstdio.h>
 #include <seed.h>
 
@@ -59,6 +62,7 @@
 #endif
 
 GLogLevelFlags logged_levels;
+#if 0
 static void no_log_handler() { }
 
 static gchar * get_cache_directory_name(const gchar *namespace)
@@ -274,6 +278,7 @@ static void load_typelibs()
     for (i = 0; gir_checksums[i]; i++)
         g_free(gir_checksums[i]);
 }
+#endif
 
 static SeedException evaluate_script(SeedContext context, gchar *script, guint script_len,
     gchar *script_name)
@@ -376,7 +381,9 @@ static gpointer run(GAsyncQueue *msg_queue)
     client_script_lengths[3] = webrtc_js__len;
     client_script_lengths[4] = 0;
 
+#if 0
     load_typelibs();
+#endif
     owr_init_with_main_context(g_main_context_default());
     engine = seed_init(&argc, &argv);
     seed_engine_set_search_path(engine, "");
