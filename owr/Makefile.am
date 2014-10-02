@@ -73,7 +73,7 @@ Owr_0_1_gir_CFLAGS = \
     -I$(top_srcdir)/owr \
     -I$(top_srcdir)/transport \
     -I$(top_srcdir)/local
-Owr_0_1_gir_LIBS = libopenwebrtc.la
+Owr_0_1_gir_LIBS = libopenwebrtc.la gstreamer-1.0 gstvideo-1.0 gstapp-1.0
 Owr_0_1_gir_FILES = \
     owr.h \
     owr.c \
