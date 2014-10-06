@@ -384,7 +384,6 @@ static gpointer run(GAsyncQueue *msg_queue)
 #if 0
     load_typelibs();
 #endif
-    owr_init_with_main_context(g_main_context_default());
     engine = seed_init(&argc, &argv);
     seed_engine_set_search_path(engine, "");
     worker_context = seed_context_create(engine->group, NULL);

@@ -32,6 +32,9 @@ var imageServerBasePort = 10000 + Math.floor(Math.random() * 40000);
 var nextImageServerPort = imageServerBasePort;
 
 var server = new WebSocketServer(10717);
+
+owr.init()
+
 server.onaccept = function (event) {
     var ws = event.socket;
     var channel = {
