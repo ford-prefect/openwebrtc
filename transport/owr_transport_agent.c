@@ -1547,7 +1547,7 @@ static void handle_new_send_payload(OwrTransportAgent *transport_agent, OwrMedia
         g_warn_if_fail(sync_ok);
 
         name = g_strdup_printf("audio_raw_sink_%u", stream_id);
-        sink_pad = gst_element_get_static_pad(encoder, "sink");
+        sink_pad = gst_element_get_static_pad(encoder, "audio_0");
         add_pads_to_bin_and_transport_bin(sink_pad, send_input_bin,
             transport_agent->priv->transport_bin, name);
         gst_object_unref(sink_pad);

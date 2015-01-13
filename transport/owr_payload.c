@@ -41,6 +41,8 @@
 #include "owr_video_payload.h"
 #include "owr_utils.h"
 
+#include <gst/pbutils/encoding-profile.h>
+
 #include <string.h>
 
 #define DEFAULT_MTU 1200
@@ -356,12 +358,18 @@ static gboolean binding_transform_to_kbps(GBinding *binding, const GValue *from_
 
 GstElement * _owr_payload_create_encoder(OwrPayload *payload)
 {
-    GstElement *encoder = NULL;
+    GstElement *encoder = NULL, *encodebin;
+    gchar *preset = NULL;
     gchar *element_name = NULL;
     GstElementFactory *factory;
     const gchar *factory_name;
+    GstEncodingProfile *enc_profile = NULL;
+    gboolean make_preset = FALSE;
 
     g_return_val_if_fail(payload, NULL);
+
+    encodebin = gst_element_factory_make("encodebin", "encoder");
+    g_return_val_if_fail(encodebin, NULL);
 
     switch (payload->priv->codec_type) {
     case OWR_CODEC_TYPE_H264:
@@ -389,6 +397,7 @@ GstElement * _owr_payload_create_encoder(OwrPayload *payload)
             g_object_bind_property(payload, "bitrate", encoder, "bitrate", G_BINDING_SYNC_CREATE);
         }
         g_object_set(payload, "bitrate", evaluate_bitrate_from_payload(payload), NULL);
+        make_preset = TRUE;
         break;
 
     case OWR_CODEC_TYPE_VP8:
@@ -398,6 +407,7 @@ GstElement * _owr_payload_create_encoder(OwrPayload *payload)
             "error-resilient", 1, "keyframe-mode", 0, NULL);
         g_object_bind_property(payload, "bitrate", encoder, "target-bitrate", G_BINDING_SYNC_CREATE);
         g_object_set(payload, "bitrate", evaluate_bitrate_from_payload(payload), NULL);
+        make_preset = TRUE;
         break;
     default:
         element_name = g_strdup_printf("encoder_%s_%u", OwrCodecTypeEncoderElementName[payload->priv->codec_type], get_unique_id());
@@ -407,7 +417,36 @@ GstElement * _owr_payload_create_encoder(OwrPayload *payload)
         break;
     }
 
-    return encoder;
+    if (make_preset && GST_IS_PRESET(encoder)) {
+        factory = gst_element_get_factory(encoder);
+        factory_name = gst_plugin_feature_get_name(factory);
+
+        preset = g_strdup_printf("owr_%s", factory_name);
+        gst_preset_save_preset(GST_PRESET(encoder), preset);
+    }
+
+    if (OWR_IS_VIDEO_PAYLOAD(payload)) {
+        enc_profile =
+            GST_ENCODING_PROFILE(gst_encoding_video_profile_new(_owr_payload_create_encoded_caps(payload),
+                        preset, NULL, 1));
+    } else if (OWR_IS_AUDIO_PAYLOAD(payload)) {
+        enc_profile =
+            GST_ENCODING_PROFILE(gst_encoding_audio_profile_new(_owr_payload_create_encoded_caps(payload),
+                        preset, NULL, 1));
+    } else {
+        g_warn_if_reached();
+    }
+
+    g_return_val_if_fail(enc_profile, NULL);
+    g_object_set(encodebin, "profile", enc_profile, NULL);
+
+    if (preset)
+        g_free(preset);
+
+    gst_element_set_state(encoder, GST_STATE_NULL);
+    gst_object_unref(encoder);
+
+    return encodebin;
 }
 
 GstElement * _owr_payload_create_decoder(OwrPayload *payload)
@@ -662,6 +701,15 @@ GstCaps * _owr_payload_create_encoded_caps(OwrPayload *payload)
         break;
     case OWR_CODEC_TYPE_VP8:
         caps = gst_caps_new_empty_simple("video/x-vp8");
+        break;
+    case OWR_CODEC_TYPE_OPUS:
+        caps = gst_caps_new_empty_simple("audio/x-opus");
+        break;
+    case OWR_CODEC_TYPE_PCMU:
+        caps = gst_caps_new_empty_simple("audio/x-mulaw");
+        break;
+    case OWR_CODEC_TYPE_PCMA:
+        caps = gst_caps_new_empty_simple("audio/x-alaw");
         break;
     default:
         caps = gst_caps_new_any();
