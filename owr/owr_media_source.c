@@ -270,7 +270,7 @@ static GstElement *owr_media_source_request_source_default(OwrMediaSource *media
 {
     OwrMediaType media_type;
     GstElement *source_pipeline, *tee;
-    GstElement *source_bin, *source = NULL, *queue_pre, *queue_post;
+    GstElement *source_bin, *source = NULL, *queue_pre, *queue_post, *first;
     GstElement *capsfilter;
     GstElement *sink, *sink_queue, *sink_bin;
     GstPad *bin_pad = NULL, *srcpad, *sinkpad;
@@ -290,7 +290,6 @@ static GstElement *owr_media_source_request_source_default(OwrMediaSource *media
     source_bin = gst_bin_new(bin_name);
     g_free(bin_name);
 
-    CREATE_ELEMENT_WITH_ID(queue_pre, "queue", "source-queue", source_id);
     CREATE_ELEMENT_WITH_ID(capsfilter, "capsfilter", "source-output-capsfilter", source_id);
     CREATE_ELEMENT_WITH_ID(queue_post, "queue", "source-output-queue", source_id);
 
@@ -307,6 +306,7 @@ static GstElement *owr_media_source_request_source_default(OwrMediaSource *media
 
         g_object_set(capsfilter, "caps", caps, NULL);
 
+        CREATE_ELEMENT_WITH_ID(queue_pre, "queue", "source-queue", source_id);
         CREATE_ELEMENT_WITH_ID(audioresample, "audioresample", "source-audio-resample", source_id);
         CREATE_ELEMENT_WITH_ID(audioconvert, "audioconvert", "source-audio-convert", source_id);
 
@@ -316,12 +316,15 @@ static GstElement *owr_media_source_request_source_default(OwrMediaSource *media
         LINK_ELEMENTS(audioresample, capsfilter);
         LINK_ELEMENTS(audioconvert, audioresample);
         LINK_ELEMENTS(queue_pre, audioconvert);
+        first = queue_pre;
 
         break;
         }
     case OWR_MEDIA_TYPE_VIDEO:
         {
         GstElement *videoscale, *videoconvert;
+        GstPad *tee_sinkpad;
+        GstCaps *src_caps;
 
         CREATE_ELEMENT_WITH_ID(source, "intervideosrc", "source", source_id);
         CREATE_ELEMENT_WITH_ID(sink, "intervideosink", "sink", source_id);
@@ -332,15 +335,33 @@ static GstElement *owr_media_source_request_source_default(OwrMediaSource *media
 
         g_object_set(capsfilter, "caps", caps, NULL);
 
-        CREATE_ELEMENT_WITH_ID(videoconvert, VIDEO_CONVERT, "source-video-convert", source_id);
-        CREATE_ELEMENT_WITH_ID(videoscale, "videoscale", "source-video-scale", source_id);
+        /* Let's see if we have specific caps from the source, and whether
+         * they're compatible */
+        tee_sinkpad = gst_element_get_static_pad(tee, "sink");
+        src_caps = gst_pad_peer_query_caps(tee_sinkpad, caps);
 
-        gst_bin_add_many(GST_BIN(source_bin),
-            queue_pre, videoscale, videoconvert, capsfilter, queue_post, NULL);
-        LINK_ELEMENTS(capsfilter, queue_post);
-        LINK_ELEMENTS(videoconvert, capsfilter);
-        LINK_ELEMENTS(videoscale, videoconvert);
-        LINK_ELEMENTS(queue_pre, videoscale);
+        if (!gst_caps_is_empty(src_caps)) {
+            /* We have the caps we want, don't bother with conversion */
+            gst_bin_add_many(GST_BIN(source_bin), capsfilter, queue_post, NULL);
+            LINK_ELEMENTS(capsfilter, queue_post);
+            first = capsfilter;
+        } else {
+            /* Cross our fingers and hope conversion works */
+            CREATE_ELEMENT_WITH_ID(queue_pre, "queue", "source-queue", source_id);
+            CREATE_ELEMENT_WITH_ID(videoconvert, VIDEO_CONVERT, "source-video-convert", source_id);
+            CREATE_ELEMENT_WITH_ID(videoscale, "videoscale", "source-video-scale", source_id);
+
+            gst_bin_add_many(GST_BIN(source_bin),
+                queue_pre, videoscale, videoconvert, capsfilter, queue_post, NULL);
+            LINK_ELEMENTS(capsfilter, queue_post);
+            LINK_ELEMENTS(videoconvert, capsfilter);
+            LINK_ELEMENTS(videoscale, videoconvert);
+            LINK_ELEMENTS(queue_pre, videoscale);
+            first = queue_pre;
+        }
+
+        gst_caps_unref(src_caps);
+        gst_object_unref(tee_sinkpad);
 
         break;
         }
@@ -383,7 +404,7 @@ static GstElement *owr_media_source_request_source_default(OwrMediaSource *media
     gst_element_add_pad(source_bin, bin_pad);
 
     gst_bin_add(GST_BIN(source_bin), source);
-    LINK_ELEMENTS(source, queue_pre);
+    LINK_ELEMENTS(source, first);
 
 done:
 
