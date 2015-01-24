@@ -44,7 +44,7 @@ GstElement * _owr_payload_create_payload_packetizer(OwrPayload *payload);
 GstElement * _owr_payload_create_payload_depacketizer(OwrPayload *payload);
 OwrMediaType _owr_payload_get_media_type(OwrPayload *payload);
 GstCaps * _owr_payload_create_rtp_caps(OwrPayload *payload);
-GstCaps * _owr_payload_create_raw_caps(OwrPayload *payload);
+GstCaps * _owr_payload_create_source_caps(OwrPayload *payload);
 GstCaps * _owr_payload_create_encoded_caps(OwrPayload *payload);
 
 G_END_DECLS

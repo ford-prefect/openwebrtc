@@ -602,7 +602,7 @@ static void handle_new_send_source(OwrTransportAgent *transport_agent,
     g_object_get(send_payload, "codec-type", &codec_type, NULL);
     */
 
-    caps = _owr_payload_create_raw_caps(send_payload);
+    caps = _owr_payload_create_source_caps(send_payload);
     src = _owr_media_source_request_source(send_source, caps);
     g_assert(src);
     gst_caps_unref(caps);
@@ -1496,6 +1496,8 @@ static void handle_new_send_payload(OwrTransportAgent *transport_agent, OwrMedia
         encoder_capsfilter = gst_element_factory_make("capsfilter", name);
         g_free(name);
         caps = _owr_payload_create_encoded_caps(payload);
+        if (!caps)
+            caps = gst_caps_new_any();
         g_object_set(encoder_capsfilter, "caps", caps, NULL);
         gst_caps_unref(caps);
 
