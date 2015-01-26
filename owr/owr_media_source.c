@@ -326,8 +326,8 @@ static GstElement *owr_media_source_request_source_default(OwrMediaSource *media
         GstPad *tee_sinkpad;
         GstCaps *src_caps;
 
-        CREATE_ELEMENT_WITH_ID(source, "intervideosrc", "source", source_id);
-        CREATE_ELEMENT_WITH_ID(sink, "intervideosink", "sink", source_id);
+        CREATE_ELEMENT_WITH_ID(source, "interappsrc", "source", source_id);
+        CREATE_ELEMENT_WITH_ID(sink, "interappsink", "sink", source_id);
 
         srcpad = gst_element_get_static_pad(source, "src");
         gst_pad_add_probe(srcpad, GST_PAD_PROBE_TYPE_BUFFER, drop_gap_buffers, NULL, NULL);
