@@ -554,6 +554,14 @@ static GstElement *owr_local_media_source_request_source(OwrMediaSource *media_s
             gst_caps_unref(source_caps);
             gst_bin_add(GST_BIN(source_pipeline), capsfilter);
 
+            /* In case we have compressed output from the source */
+            if (!source_process) {
+                /* Only try this if we didn't have to insert a videoscale already */
+                CREATE_ELEMENT(source_process, "singledecodebin", "video-source-parsebin");
+                g_object_set(source_process, "parse-only", TRUE, NULL);
+                gst_bin_add(GST_BIN(source_pipeline), source_process);
+            }
+
             break;
         }
         case OWR_MEDIA_TYPE_UNKNOWN:
